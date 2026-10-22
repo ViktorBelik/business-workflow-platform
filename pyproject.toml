@@ -1,0 +1,32 @@
+[project]
+name = "business-workflow-platform"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "BEL",email = "93378272+ViktorBelik@users.noreply.github.com"}
+]
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "fastapi (>=0.143.0,<0.144.0)",
+    "uvicorn[standard] (>=0.54.0,<0.55.0)",
+    "pydantic-settings (>=2.15.0,<3.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.1.1,<10.0.0)",
+    "pytest-asyncio (>=1.4.0,<2.0.0)",
+    "ruff (>=0.17.0,<0.18.0)",
+    "mypy (>=2.4.0,<3.0.0)",
+    "httpx2 (>=2.16.0,<3.0.0)"
+]
+
+[tool.poetry]
+packages = [
+    { include = "backend" }
+]
