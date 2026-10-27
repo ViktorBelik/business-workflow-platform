@@ -37,3 +37,40 @@ async def test_create_workflow(
 
     assert str(workflow.id) == data["id"]
     assert workflow.description == data["description"]
+
+
+@pytest.mark.asyncio
+async def test_get_workflows(
+    client: AsyncClient,
+) -> None:
+    first_response = await client.post(
+        "/workflows",
+        json={"name": "Первый процесс"},
+    )
+    second_response = await client.post(
+        "/workflows",
+        json={"name": "Второй процесс"},
+    )
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 201
+
+    response = await client.get("/workflows")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == 2
+    assert data[0]["name"] == "Первый процесс"
+    assert data[1]["name"] == "Второй процесс"
+
+
+@pytest.mark.asyncio
+async def test_get_workflows_empty(
+    client: AsyncClient,
+) -> None:
+    response = await client.get("/workflows")
+
+    assert response.status_code == 200
+    assert response.json() == []

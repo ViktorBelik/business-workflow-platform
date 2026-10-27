@@ -1,3 +1,4 @@
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.infrastructure.models.workflow import Workflow
@@ -18,3 +19,13 @@ async def create_workflow(
     await session.refresh(workflow)
 
     return workflow
+
+
+async def get_workflows(
+    session: AsyncSession,
+) -> list[Workflow]:
+    result = await session.scalars(
+        select(Workflow).order_by(Workflow.created_at.desc())
+    )
+
+    return list(result.all())

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.infrastructure.database import get_session
 from backend.app.schemas.workflow import WorkflowCreate, WorkflowRead
-from backend.app.services.workflow import create_workflow
+from backend.app.services.workflow import create_workflow, get_workflows
 
 router = APIRouter(
     prefix="/workflows",
@@ -28,3 +28,16 @@ async def create_workflow_endpoint(
     )
 
     return WorkflowRead.model_validate(workflow)
+
+
+@router.get(
+    "",
+    response_model=list[WorkflowRead],
+    status_code=status.HTTP_200_OK,
+)
+async def get_workflows_endpoint(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[WorkflowRead]:
+    workflows = await get_workflows(session=session)
+
+    return [WorkflowRead.model_validate(workflow) for workflow in workflows]
