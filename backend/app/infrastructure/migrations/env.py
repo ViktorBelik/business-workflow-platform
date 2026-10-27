@@ -13,9 +13,14 @@ from backend.app.infrastructure.base import Base
 # access to the values within the .ini file in use.
 config = context.config
 
+database_url = config.attributes.get(
+    "database_url",
+    settings.database_url,
+)
+
 config.set_main_option(
     "sqlalchemy.url",
-    settings.database_url.render_as_string(
+    database_url.render_as_string(
         hide_password=False,
     ).replace("%", "%%"),
 )
@@ -50,6 +55,7 @@ def run_migrations_offline() -> None:
 
     """
     url = config.get_main_option("sqlalchemy.url")
+
     context.configure(
         url=url,
         target_metadata=target_metadata,

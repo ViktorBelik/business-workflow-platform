@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from backend.app.api.health import router as health_router
+from backend.app.api.workflows import router as workflows_router
 from backend.app.core.config import settings
 
 app = FastAPI(
@@ -8,6 +9,7 @@ app = FastAPI(
 )
 
 app.include_router(health_router)
+app.include_router(workflows_router)
 
 
 @app.get("/")

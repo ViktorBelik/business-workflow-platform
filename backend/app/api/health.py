@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
@@ -15,7 +17,7 @@ async def health() -> dict[str, str]:
 
 @router.get("/health/db")
 async def database_health(
-    session: AsyncSession = Depends(get_session),
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> dict[str, str]:
     try:
         await session.execute(text("SELECT 1"))

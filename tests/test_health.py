@@ -20,9 +20,7 @@ def test_root() -> None:
     response = client.get("/")
 
     assert response.status_code == 200
-    assert response.json() == {
-        "message": "Business Workflow Automation Platform"
-    }
+    assert response.json() == {"message": "Business Workflow Automation Platform"}
 
 
 def test_database_health() -> None:
