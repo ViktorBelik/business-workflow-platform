@@ -59,7 +59,7 @@ async def test_get_workflows(
 
     assert response.status_code == 200
 
-    data = response.json()
+    data = response.json()["items"]
 
     assert len(data) == 2
     assert data[0]["name"] == "Первый процесс"
@@ -73,7 +73,7 @@ async def test_get_workflows_empty(
     response = await client.get("/workflows")
 
     assert response.status_code == 200
-    assert response.json() == []
+    assert response.json()["items"] == []
 
 
 @pytest.mark.asyncio
@@ -270,8 +270,8 @@ async def test_get_workflows_by_status(
     assert active_list_response.status_code == 200
     assert inactive_list_response.status_code == 200
 
-    active_workflows = active_list_response.json()
-    inactive_workflows = inactive_list_response.json()
+    active_workflows = active_list_response.json()["items"]
+    inactive_workflows = inactive_list_response.json()["items"]
 
     assert len(active_workflows) == 1
     assert active_workflows[0]["name"] == "Активный процесс"
@@ -292,3 +292,126 @@ async def test_get_workflows_invalid_status(
     )
 
     assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_get_workflows_with_limit(client: AsyncClient) -> None:
+    for name in ("Workflow 1", "Workflow 2", "Workflow 3"):
+        await client.post(
+            "/workflows",
+            json={"name": name, "description": None},
+        )
+
+    response = await client.get("/workflows?limit=2")
+
+    assert response.status_code == 200
+    assert len(response.json()["items"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_get_workflows_with_offset(client: AsyncClient) -> None:
+    for name in ("Workflow 1", "Workflow 2", "Workflow 3"):
+        await client.post(
+            "/workflows",
+            json={"name": name, "description": None},
+        )
+
+    all_response = await client.get("/workflows")
+    offset_response = await client.get("/workflows?offset=2")
+
+    assert all_response.status_code == 200
+    assert offset_response.status_code == 200
+
+    all_workflows = all_response.json()["items"]
+    offset_workflows = offset_response.json()["items"]
+
+    assert len(all_workflows) == 3
+    assert len(offset_workflows) == 1
+    assert offset_workflows[0]["id"] == all_workflows[2]["id"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"limit": 0},
+        {"limit": 101},
+        {"offset": -1},
+    ],
+)
+async def test_get_workflows_invalid_pagination(
+    client: AsyncClient,
+    params: dict[str, int],
+) -> None:
+    response = await client.get("/workflows", params=params)
+
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_get_workflows_status_with_limit(
+    client: AsyncClient,
+) -> None:
+    await client.post(
+        "/workflows",
+        json={"name": "Active 1", "description": None},
+    )
+    await client.post(
+        "/workflows",
+        json={"name": "Active 2", "description": None},
+    )
+
+    response = await client.get("/workflows?status=active&limit=1")
+
+    assert response.status_code == 200
+
+    workflows = response.json()["items"]
+    assert len(workflows) == 1
+    assert workflows[0]["status"] == "active"
+
+
+@pytest.mark.asyncio
+async def test_get_workflows_pagination_metadata(
+    client: AsyncClient,
+) -> None:
+    for name in ("Workflow 1", "Workflow 2", "Workflow 3"):
+        await client.post(
+            "/workflows",
+            json={"name": name, "description": None},
+        )
+
+    response = await client.get("/workflows?limit=2&offset=1")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data["items"]) == 2
+    assert data["total"] == 3
+    assert data["limit"] == 2
+    assert data["offset"] == 1
+
+
+@pytest.mark.asyncio
+async def test_get_workflows_total_with_status_filter(
+    client: AsyncClient,
+) -> None:
+    await client.post(
+        "/workflows",
+        json={"name": "Active 1", "description": None},
+    )
+    await client.post(
+        "/workflows",
+        json={"name": "Active 2", "description": None},
+    )
+
+    response = await client.get("/workflows?status=active&limit=1")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data["items"]) == 1
+    assert data["total"] == 2
+    assert data["limit"] == 1
+    assert data["offset"] == 0

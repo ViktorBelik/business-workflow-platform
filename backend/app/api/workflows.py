@@ -8,10 +8,12 @@ from backend.app.infrastructure.database import get_session
 from backend.app.infrastructure.models.workflow import WorkflowStatus
 from backend.app.schemas.workflow import (
     WorkflowCreate,
+    WorkflowListResponse,
     WorkflowRead,
     WorkflowUpdate,
 )
 from backend.app.services.workflow import (
+    count_workflows,
     create_workflow,
     deactivate_workflow,
     get_workflow,
@@ -44,19 +46,32 @@ async def create_workflow_endpoint(
 
 @router.get(
     "",
-    response_model=list[WorkflowRead],
+    response_model=WorkflowListResponse,
     status_code=status.HTTP_200_OK,
 )
 async def get_workflows_endpoint(
     session: Annotated[AsyncSession, Depends(get_session)],
     workflow_status: Annotated[WorkflowStatus | None, Query(alias="status")] = None,
-) -> list[WorkflowRead]:
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> WorkflowListResponse:
     workflows = await get_workflows(
+        session=session,
+        status=workflow_status,
+        limit=limit,
+        offset=offset,
+    )
+    total = await count_workflows(
         session=session,
         status=workflow_status,
     )
 
-    return [WorkflowRead.model_validate(workflow) for workflow in workflows]
+    return WorkflowListResponse(
+        items=[WorkflowRead.model_validate(workflow) for workflow in workflows],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.get(

@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.infrastructure.models.workflow import Workflow, WorkflowStatus
@@ -26,6 +26,8 @@ async def create_workflow(
 async def get_workflows(
     session: AsyncSession,
     status: WorkflowStatus | None = None,
+    limit: int = 20,
+    offset: int = 0,
 ) -> list[Workflow]:
     query = select(Workflow)
 
@@ -33,10 +35,24 @@ async def get_workflows(
         query = query.where(Workflow.status == status)
 
     query = query.order_by(Workflow.created_at.desc())
+    query = query.limit(limit).offset(offset)
 
     result = await session.scalars(query)
 
     return list(result.all())
+
+
+async def count_workflows(
+    session: AsyncSession,
+    status: WorkflowStatus | None = None,
+) -> int:
+    query = select(func.count()).select_from(Workflow)
+
+    if status is not None:
+        query = query.where(Workflow.status == status)
+
+    result = await session.scalar(query)
+    return result or 0
 
 
 async def get_workflow(
