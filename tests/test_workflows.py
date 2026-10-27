@@ -74,3 +74,44 @@ async def test_get_workflows_empty(
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+@pytest.mark.asyncio
+async def test_get_workflow(
+    client: AsyncClient,
+) -> None:
+    create_response = await client.post(
+        "/workflows",
+        json={
+            "name": "Обработка заказа",
+            "description": "Автоматизация обработки заказа",
+        },
+    )
+
+    assert create_response.status_code == 201
+
+    created_workflow = create_response.json()
+    workflow_id = created_workflow["id"]
+
+    response = await client.get(f"/workflows/{workflow_id}")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["id"] == workflow_id
+    assert data["name"] == "Обработка заказа"
+    assert data["description"] == "Автоматизация обработки заказа"
+    assert data["status"] == "active"
+
+
+@pytest.mark.asyncio
+async def test_get_workflow_not_found(
+    client: AsyncClient,
+) -> None:
+    workflow_id = "00000000-0000-0000-0000-000000000001"
+
+    response = await client.get(f"/workflows/{workflow_id}")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Workflow not found"}

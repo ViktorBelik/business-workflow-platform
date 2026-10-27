@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,3 +31,12 @@ async def get_workflows(
     )
 
     return list(result.all())
+
+
+async def get_workflow(
+    session: AsyncSession,
+    workflow_id: UUID,
+) -> Workflow | None:
+    result = await session.execute(select(Workflow).where(Workflow.id == workflow_id))
+
+    return result.scalar_one_or_none()

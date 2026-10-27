@@ -1,11 +1,16 @@
 from typing import Annotated
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.infrastructure.database import get_session
 from backend.app.schemas.workflow import WorkflowCreate, WorkflowRead
-from backend.app.services.workflow import create_workflow, get_workflows
+from backend.app.services.workflow import (
+    create_workflow,
+    get_workflow,
+    get_workflows,
+)
 
 router = APIRouter(
     prefix="/workflows",
@@ -41,3 +46,26 @@ async def get_workflows_endpoint(
     workflows = await get_workflows(session=session)
 
     return [WorkflowRead.model_validate(workflow) for workflow in workflows]
+
+
+@router.get(
+    "/{workflow_id}",
+    response_model=WorkflowRead,
+    status_code=status.HTTP_200_OK,
+)
+async def get_workflow_endpoint(
+    workflow_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> WorkflowRead:
+    workflow = await get_workflow(
+        session=session,
+        workflow_id=workflow_id,
+    )
+
+    if workflow is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workflow not found",
+        )
+
+    return WorkflowRead.model_validate(workflow)
