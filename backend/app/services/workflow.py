@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.infrastructure.models.workflow import Workflow
+from backend.app.infrastructure.models.workflow import Workflow, WorkflowStatus
 from backend.app.schemas.workflow import WorkflowCreate, WorkflowUpdate
 
 
@@ -62,3 +62,22 @@ async def update_workflow(
     await session.refresh(workflow)
 
     return workflow
+
+
+async def deactivate_workflow(
+    session: AsyncSession,
+    workflow_id: UUID,
+) -> bool:
+    workflow = await get_workflow(
+        session=session,
+        workflow_id=workflow_id,
+    )
+
+    if workflow is None:
+        return False
+
+    if workflow.status != WorkflowStatus.INACTIVE:
+        workflow.status = WorkflowStatus.INACTIVE
+        await session.commit()
+
+    return True

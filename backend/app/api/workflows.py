@@ -12,6 +12,7 @@ from backend.app.schemas.workflow import (
 )
 from backend.app.services.workflow import (
     create_workflow,
+    deactivate_workflow,
     get_workflow,
     get_workflows,
     update_workflow,
@@ -99,3 +100,23 @@ async def update_workflow_endpoint(
         )
 
     return WorkflowRead.model_validate(workflow)
+
+
+@router.delete(
+    "/{workflow_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def deactivate_workflow_endpoint(
+    workflow_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> None:
+    deactivated = await deactivate_workflow(
+        session=session,
+        workflow_id=workflow_id,
+    )
+
+    if not deactivated:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workflow not found",
+        )

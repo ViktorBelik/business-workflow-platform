@@ -172,3 +172,66 @@ async def test_update_workflow_not_found(
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Workflow not found"}
+
+
+@pytest.mark.asyncio
+async def test_deactivate_workflow(
+    client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    create_response = await client.post(
+        "/workflows",
+        json={
+            "name": "Процесс для деактивации",
+            "description": "Проверка мягкого удаления",
+        },
+    )
+
+    assert create_response.status_code == 201
+
+    created_workflow = create_response.json()
+    workflow_id = created_workflow["id"]
+
+    response = await client.delete(f"/workflows/{workflow_id}")
+
+    assert response.status_code == 204
+    assert response.content == b""
+
+    result = await db_session.execute(
+        select(Workflow).where(Workflow.id == workflow_id)
+    )
+    workflow = result.scalar_one()
+
+    assert workflow.status == "inactive"
+
+
+@pytest.mark.asyncio
+async def test_deactivate_workflow_not_found(
+    client: AsyncClient,
+) -> None:
+    workflow_id = "00000000-0000-0000-0000-000000000001"
+
+    response = await client.delete(f"/workflows/{workflow_id}")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Workflow not found"}
+
+
+@pytest.mark.asyncio
+async def test_deactivate_workflow_twice(
+    client: AsyncClient,
+) -> None:
+    create_response = await client.post(
+        "/workflows",
+        json={"name": "Повторная деактивация"},
+    )
+
+    assert create_response.status_code == 201
+
+    workflow_id = create_response.json()["id"]
+
+    first_response = await client.delete(f"/workflows/{workflow_id}")
+    second_response = await client.delete(f"/workflows/{workflow_id}")
+
+    assert first_response.status_code == 204
+    assert second_response.status_code == 204
