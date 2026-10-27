@@ -235,3 +235,60 @@ async def test_deactivate_workflow_twice(
 
     assert first_response.status_code == 204
     assert second_response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_get_workflows_by_status(
+    client: AsyncClient,
+) -> None:
+    active_response = await client.post(
+        "/workflows",
+        json={"name": "Активный процесс"},
+    )
+    inactive_response = await client.post(
+        "/workflows",
+        json={"name": "Неактивный процесс"},
+    )
+
+    assert active_response.status_code == 201
+    assert inactive_response.status_code == 201
+
+    inactive_id = inactive_response.json()["id"]
+
+    deactivate_response = await client.delete(f"/workflows/{inactive_id}")
+    assert deactivate_response.status_code == 204
+
+    active_list_response = await client.get(
+        "/workflows",
+        params={"status": "active"},
+    )
+    inactive_list_response = await client.get(
+        "/workflows",
+        params={"status": "inactive"},
+    )
+
+    assert active_list_response.status_code == 200
+    assert inactive_list_response.status_code == 200
+
+    active_workflows = active_list_response.json()
+    inactive_workflows = inactive_list_response.json()
+
+    assert len(active_workflows) == 1
+    assert active_workflows[0]["name"] == "Активный процесс"
+    assert active_workflows[0]["status"] == "active"
+
+    assert len(inactive_workflows) == 1
+    assert inactive_workflows[0]["name"] == "Неактивный процесс"
+    assert inactive_workflows[0]["status"] == "inactive"
+
+
+@pytest.mark.asyncio
+async def test_get_workflows_invalid_status(
+    client: AsyncClient,
+) -> None:
+    response = await client.get(
+        "/workflows",
+        params={"status": "unknown"},
+    )
+
+    assert response.status_code == 422

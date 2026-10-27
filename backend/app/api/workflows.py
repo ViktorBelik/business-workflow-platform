@@ -1,10 +1,11 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.infrastructure.database import get_session
+from backend.app.infrastructure.models.workflow import WorkflowStatus
 from backend.app.schemas.workflow import (
     WorkflowCreate,
     WorkflowRead,
@@ -48,8 +49,12 @@ async def create_workflow_endpoint(
 )
 async def get_workflows_endpoint(
     session: Annotated[AsyncSession, Depends(get_session)],
+    workflow_status: Annotated[WorkflowStatus | None, Query(alias="status")] = None,
 ) -> list[WorkflowRead]:
-    workflows = await get_workflows(session=session)
+    workflows = await get_workflows(
+        session=session,
+        status=workflow_status,
+    )
 
     return [WorkflowRead.model_validate(workflow) for workflow in workflows]
 

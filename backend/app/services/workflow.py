@@ -25,10 +25,16 @@ async def create_workflow(
 
 async def get_workflows(
     session: AsyncSession,
+    status: WorkflowStatus | None = None,
 ) -> list[Workflow]:
-    result = await session.scalars(
-        select(Workflow).order_by(Workflow.created_at.desc())
-    )
+    query = select(Workflow)
+
+    if status is not None:
+        query = query.where(Workflow.status == status)
+
+    query = query.order_by(Workflow.created_at.desc())
+
+    result = await session.scalars(query)
 
     return list(result.all())
 
