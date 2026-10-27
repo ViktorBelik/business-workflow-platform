@@ -115,3 +115,60 @@ async def test_get_workflow_not_found(
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Workflow not found"}
+
+
+@pytest.mark.asyncio
+async def test_update_workflow(
+    client: AsyncClient,
+) -> None:
+    create_response = await client.post(
+        "/workflows",
+        json={
+            "name": "Исходный процесс",
+            "description": "Исходное описание",
+        },
+    )
+
+    assert create_response.status_code == 201
+
+    created_workflow = create_response.json()
+
+    workflow_id = created_workflow["id"]
+    created_at = created_workflow["created_at"]
+
+    update_response = await client.put(
+        f"/workflows/{workflow_id}",
+        json={
+            "name": "Обновлённый процесс",
+            "description": "Обновлённое описание",
+        },
+    )
+
+    assert update_response.status_code == 200
+
+    data = update_response.json()
+
+    assert data["id"] == workflow_id
+    assert data["name"] == "Обновлённый процесс"
+    assert data["description"] == "Обновлённое описание"
+    assert data["status"] == "active"
+    assert data["created_at"] == created_at
+    assert data["updated_at"] != created_at
+
+
+@pytest.mark.asyncio
+async def test_update_workflow_not_found(
+    client: AsyncClient,
+) -> None:
+    workflow_id = "00000000-0000-0000-0000-000000000001"
+
+    response = await client.put(
+        f"/workflows/{workflow_id}",
+        json={
+            "name": "Обновлённый процесс",
+            "description": "Обновлённое описание",
+        },
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Workflow not found"}
